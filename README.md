@@ -12,7 +12,7 @@ A premium AI-powered SaaS application that helps students plan, build, and pitch
 | Auth | Firebase Authentication |
 | AI | Google Gemini API |
 | PPT | pptxgenjs |
-| Deployment | Render |
+| Deployment | Vercel |
 
 ## Features
 
