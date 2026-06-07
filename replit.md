@@ -1,36 +1,64 @@
-# [Project name]
+# Hackathon Helper AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An AI-powered hackathon companion that turns project ideas into winning plans — generating project roadmaps, tech stacks, code snippets, pitch decks, timelines, and more using Google Gemini.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/hackathon-helper run dev` — run the frontend (Vite, port from $PORT)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 19 + Vite + Tailwind v4 + Wouter (routing) + Framer Motion
+- Auth & DB: Firebase Auth + Firestore + Firebase Storage
+- AI: Google Gemini (`@google/generative-ai`) — called client-side via `VITE_GEMINI_API_KEY`
+- PDF export: jsPDF | PPT export: pptxgenjs | Charts: Recharts
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/hackathon-helper/src/` — all frontend source
+  - `lib/firebase.ts` — Firebase initialization (reads `VITE_FIREBASE_*` env vars)
+  - `lib/gemini.ts` — Gemini AI calls for project generation + mentor chat
+  - `lib/types.ts` — shared types: `Project`, `OutputKey`, `GeneratedResults`, etc.
+  - `context/AuthContext.tsx` — Firebase auth state + Google sign-in
+  - `context/ThemeContext.tsx` — light/dark theme, synced to Firestore
+  - `pages/` — one file per route: Landing, Login, Signup, Dashboard, CreateProject, Project, History, Profile, Settings
+  - `components/` — Sidebar, DashboardLayout, ProtectedRoute, MentorChat, ThemeToggle
+  - `components/ui/ContentRenderer.tsx` — renders all 13 output types (radar charts, timelines, code blocks, etc.)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Gemini is called **client-side** with `VITE_GEMINI_API_KEY` — simpler for a hackathon tool, avoids a backend proxy
+- All user data (projects, chat history, user profiles) lives in **Firestore** — no separate DB needed
+- Routing uses **Wouter** (tiny, no React Router overhead) with `base={import.meta.env.BASE_URL}`
+- Theme is persisted both in `localStorage` and Firestore user document so it survives sessions
+- PDF/PPT export is done **client-side** with lazy-loaded jsPDF/pptxgenjs to keep initial bundle small
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Landing page with feature showcase and CTAs
+- Email/password + Google OAuth sign-up & login
+- "Create Project" wizard: enter title + description, pick team size & duration, select from 13 AI outputs
+- Project detail page with tabbed output viewer (plan, tech stack, schema, UI design, code, PPT, README, scores, pitches, tasks, timeline, validator)
+- PDF export (all outputs) and PPTX export (10-slide deck)
+- Per-project AI mentor chat (Firestore-backed conversation history)
+- Project history with search + delete
+- Profile page with achievement badges
+- Settings: update display name, change password, toggle theme
+
+## Required Secrets
+
+All set via Replit Secrets:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_GEMINI_API_KEY`
 
 ## User preferences
 
@@ -38,7 +66,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Firebase `VITE_*` env vars must be set before the Vite dev server starts — restart the workflow after adding secrets
+- Firestore security rules need to be configured in the Firebase console to allow reads/writes for authenticated users
+- Google sign-in requires the Replit preview domain to be added to Firebase Auth → Authorized domains
 
 ## Pointers
 
