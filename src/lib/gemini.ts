@@ -10,12 +10,21 @@ const OUTPUT_PROMPTS: Record<OutputKey, string> = {
   readme: `"readme": Complete README.md content with badges, description, features, tech stack, setup instructions, env variables, and license.`,
   deploymentGuide: `"deploymentGuide": Step-by-step deployment instructions for Render (primary) and alternatives, including env setup, build commands, and Firebase domain config.`,
   pptContent: `"pptContent": An array of exactly 10 slide objects. Each slide has "title", "content" (string or bullet array), and "type" (title|problem|solution|features|architecture|techStack|workflow|screenshots|future|thankyou). Slides: Title, Problem Statement, Solution, Features, Architecture, Tech Stack, Workflow, Screenshots Placeholder, Future Scope, Thank You.`,
+  projectScores: `"projectScores": An object with "innovation", "feasibility", "scalability", "uiux", "winningProbability" (all integers 0-100).`,
+  pitches: `"pitches": An object with "thirtySeconds", "oneMinute", "threeMinutes" pitches.`,
+  teamTasks: `"teamTasks": An array of objects with "role" and "tasks" (array of strings) distributed based on the team size provided.`,
+  timeline: `"timeline": An array of objects with "time" and "task" based on the duration provided.`,
+  validator: `"validator": An object with "strengths" (array), "weaknesses" (array), "risks" (array), "suggestions" (array).`,
 };
+
+const GEMINI_MODEL = "gemini-1.5-flash-latest";
 
 export async function generateProjectData(
   title: string,
   description: string,
-  outputs: OutputKey[]
+  outputs: OutputKey[],
+  teamSize: number = 1,
+  duration: string = "24h"
 ): Promise<GeneratedResults> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -24,7 +33,7 @@ export async function generateProjectData(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: GEMINI_MODEL,
     generationConfig: {
       temperature: 0.7,
       maxOutputTokens: 8192,
@@ -39,6 +48,8 @@ export async function generateProjectData(
 
 Project Title: "${title}"
 Project Description: "${description}"
+Team Size: ${teamSize} members
+Project Duration: ${duration}
 
 Generate a comprehensive hackathon project package. Return ONLY a valid JSON object with these keys (include ONLY the requested ones):
     ${fieldInstructions}
@@ -48,28 +59,75 @@ Rules:
 - Use realistic, modern technologies appropriate for a 24-48 hour hackathon
 - Code snippets must be complete and copy-paste ready
 - PPT content must be compelling for judges
+- Project scores should be realistic based on the idea
+- Timeline should be optimized for the ${duration} duration
+- Tasks should be distributed among ${teamSize} members
 - Do NOT wrap the response in markdown code blocks
 - Return raw JSON only`;
 
-  const generatedResult = await model.generateContent(prompt);
-  const response = await generatedResult.response;
-  let text = response.text().trim();
+  try {
+    console.log(`[Gemini SDK] Version: ^0.24.1`);
+    console.log(`[Gemini SDK] Using Model: ${GEMINI_MODEL}`);
+    console.log("Generating project data for:", { title, outputs, teamSize, duration });
+    
+    const generatedResult = await model.generateContent(prompt);
+    const response = await generatedResult.response;
+    let text = response.text().trim();
+    
+    console.log("[Gemini API] Response Status: OK");
+    console.log("Raw Gemini Response (first 100 chars):", text.substring(0, 100));
 
-  if (text.startsWith("```")) {
-    text = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-  }
-
-  const parsed = JSON.parse(text) as Record<string, unknown>;
-  const generated: GeneratedResults = {};
-
-  for (const key of outputs) {
-    if (key in parsed && parsed[key] !== undefined) {
-      (generated as Record<string, unknown>)[key] = parsed[key];
-    } else {
-      (generated as Record<string, unknown>)[key] =
-        `Content for ${key} could not be generated. Please regenerate.`;
+    if (text.startsWith("```")) {
+      text = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
-  }
 
-  return generated;
+    const parsed = JSON.parse(text) as Record<string, unknown>;
+    const generated: GeneratedResults = {};
+
+    for (const key of outputs) {
+      if (key in parsed && parsed[key] !== undefined) {
+        (generated as Record<string, unknown>)[key] = parsed[key];
+      } else {
+        console.warn(`Field ${key} missing in Gemini response`);
+        (generated as Record<string, unknown>)[key] =
+          `Content for ${key} could not be generated. Please regenerate.`;
+      }
+    }
+
+    return generated;
+  } catch (error) {
+    console.error("Gemini Generation Detailed Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown Gemini error";
+    throw new Error(`AI Generation Failed: ${errorMessage}`);
+  }
+}
+
+export async function askMentor(
+  title: string,
+  description: string,
+  question: string,
+  history: { role: "user" | "model"; parts: { text: string }[] }[] = []
+) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+
+  const chat = model.startChat({
+    history: [
+      {
+        role: "user",
+        parts: [{ text: `You are a hackathon mentor for a project called "${title}". Description: "${description}". Help the user with their technical or strategic questions.` }],
+      },
+      {
+        role: "model",
+        parts: [{ text: "I am your hackathon mentor. How can I help you build this project today?" }],
+      },
+      ...history,
+    ],
+  });
+
+  const result = await chat.sendMessage(question);
+  return result.response.text();
 }

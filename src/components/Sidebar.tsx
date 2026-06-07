@@ -12,6 +12,8 @@ import {
   Rocket,
   Menu,
   X,
+  User,
+  Award,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -39,12 +41,12 @@ export const Sidebar = () => {
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Create Project", href: "/create-project", icon: PlusCircle },
     { name: "History", href: "/history", icon: History },
+    { name: "My Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
@@ -52,7 +54,6 @@ export const Sidebar = () => {
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -60,13 +61,13 @@ export const Sidebar = () => {
       >
         <div className="flex flex-col h-full px-4 py-6">
           <div className="flex items-center space-x-2 px-2 mb-10">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <Rocket className="text-white w-5 h-5" />
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Rocket className="text-white w-6 h-6" />
             </div>
-            <span className="text-xl font-bold dark:text-white">Helper AI</span>
+            <span className="text-xl font-black tracking-tighter dark:text-white uppercase">Helper AI</span>
           </div>
 
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -75,13 +76,13 @@ export const Sidebar = () => {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
                     isActive
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20 font-bold"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${isActive ? "text-white" : "text-gray-400"}`} />
                   <span>{item.name}</span>
                 </Link>
               );
@@ -90,40 +91,48 @@ export const Sidebar = () => {
 
           <div className="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
             <div className="flex items-center justify-between px-3">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Theme</span>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Theme</span>
               <ThemeToggle />
             </div>
             
-            <div className="flex items-center space-x-3 px-3 py-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs">
-                {userData?.name?.charAt(0) || "U"}
+            <Link href="/profile" onClick={() => setIsOpen(false)}>
+              <div className="flex items-center space-x-3 px-3 py-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 overflow-hidden flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-sm border-2 border-white dark:border-gray-800 shadow-sm">
+                  {userData?.photoURL ? (
+                    <img src={userData.photoURL} alt={userData.name} className="w-full h-full object-cover" />
+                  ) : (
+                    userData?.name?.charAt(0) || "U"
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                    {userData?.name || "Innovator"}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Award size={10} className="text-yellow-500" />
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                      {userData?.badges?.length || 0} Badges
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {userData?.name || "User"}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {userData?.email}
-                </p>
-              </div>
-            </div>
+            </Link>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-bold text-sm"
             >
               <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Overlay */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
         />
       )}
     </>

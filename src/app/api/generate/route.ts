@@ -11,12 +11,17 @@ const VALID_OUTPUTS: OutputKey[] = [
   "pptContent",
   "readme",
   "deploymentGuide",
+  "projectScores",
+  "pitches",
+  "teamTasks",
+  "timeline",
+  "validator",
 ];
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, selectedOutputs } = body;
+    const { title, description, selectedOutputs, teamSize, duration } = body;
 
     if (!title?.trim() || !description?.trim()) {
       return NextResponse.json(
@@ -46,14 +51,17 @@ export async function POST(request: NextRequest) {
     const result = await generateProjectData(
       title.trim(),
       description.trim(),
-      outputs
+      outputs,
+      teamSize || 1,
+      duration || "24h"
     );
 
+    console.log("Generation successful for:", title);
     return NextResponse.json({ generatedResults: result });
   } catch (error) {
-    console.error("Generate API error:", error);
+    console.error("API Route Generation Error:", error);
     const message =
-      error instanceof Error ? error.message : "Failed to generate project";
+      error instanceof Error ? error.message : "Internal Server Error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

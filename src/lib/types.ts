@@ -8,14 +8,21 @@ export type OutputKey =
   | "codeSnippets"
   | "pptContent"
   | "readme"
-  | "deploymentGuide";
+  | "deploymentGuide"
+  | "projectScores"
+  | "pitches"
+  | "teamTasks"
+  | "timeline"
+  | "validator";
 
 export interface UserData {
   uid: string;
   name: string;
   email: string;
   theme: Theme;
+  photoURL?: string;
   createdAt: string;
+  badges?: string[];
 }
 
 export interface PPTSlide {
@@ -34,15 +41,51 @@ export interface PPTSlide {
     | "thankyou";
 }
 
+export interface ProjectScores {
+  innovation: number;
+  feasibility: number;
+  scalability: number;
+  uiux: number;
+  winningProbability: number;
+}
+
+export interface Pitches {
+  thirtySeconds: string;
+  oneMinute: string;
+  threeMinutes: string;
+}
+
+export interface TeamTask {
+  role: string;
+  tasks: string[];
+}
+
+export interface TimelineMilestone {
+  time: string;
+  task: string;
+}
+
+export interface ValidatorResult {
+  strengths: string[];
+  weaknesses: string[];
+  risks: string[];
+  suggestions: string[];
+}
+
 export interface GeneratedResults {
   projectPlan?: string;
-  techStack?: string | Record<string, string>;
+  techStack?: any;
   databaseSchema?: string;
   uiDesign?: string;
-  codeSnippets?: string | { title: string; language: string; code: string }[];
+  codeSnippets?: any;
   readme?: string;
   deploymentGuide?: string;
   pptContent?: PPTSlide[];
+  projectScores?: ProjectScores;
+  pitches?: Pitches;
+  teamTasks?: TeamTask[];
+  timeline?: TimelineMilestone[];
+  validator?: ValidatorResult;
 }
 
 export interface Project {
@@ -53,32 +96,46 @@ export interface Project {
   description: string;
   selectedOutputs: OutputKey[];
   generatedResults: GeneratedResults;
+  teamSize?: number;
+  duration?: "8h" | "24h" | "3d" | "1w";
   createdAt: string;
   updatedAt?: string;
 }
 
-export const OUTPUT_OPTIONS: {
-  id: OutputKey;
-  label: string;
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
   description: string;
-}[] = [
-  { id: "projectPlan", label: "Project Plan", description: "Step-by-step development roadmap" },
-  { id: "techStack", label: "Tech Stack", description: "Recommended technologies with rationale" },
-  { id: "databaseSchema", label: "Database Schema", description: "ER diagrams and data models" },
-  { id: "uiDesign", label: "UI Design", description: "UX suggestions, colors, and layouts" },
-  { id: "codeSnippets", label: "Code Snippets", description: "Production-ready starter code" },
-  { id: "pptContent", label: "PPT Slides", description: "Hackathon pitch presentation" },
-  { id: "readme", label: "README", description: "Professional documentation" },
-  { id: "deploymentGuide", label: "Deployment Guide", description: "Deploy on Render and more" },
+  icon: string;
+}
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: "first_project", name: "First Project", description: "Generated your first AI project plan", icon: "🚀" },
+  { id: "five_projects", name: "Innovator", description: "Generated 5 projects", icon: "💡" },
+  { id: "ten_projects", name: "Visionary", description: "Generated 10 projects", icon: "🌟" },
+  { id: "readme_master", name: "README Master", description: "Generated professional documentation", icon: "📚" },
+  { id: "ppt_creator", name: "Pitch Perfect", description: "Created a winning presentation", icon: "🎤" },
 ];
 
 export const TAB_LABELS: Record<OutputKey, string> = {
-  projectPlan: "Project Plan",
-  techStack: "Tech Stack",
-  databaseSchema: "DB Schema",
-  uiDesign: "UI Design",
-  codeSnippets: "Code Snippets",
-  pptContent: "PPT Slides",
+  projectPlan: "Plan",
+  techStack: "Tech",
+  databaseSchema: "Schema",
+  uiDesign: "UI/UX",
+  codeSnippets: "Code",
+  pptContent: "PPT",
   readme: "README",
-  deploymentGuide: "Deployment",
+  deploymentGuide: "Deploy",
+  projectScores: "Score",
+  pitches: "Pitches",
+  teamTasks: "Tasks",
+  timeline: "Timeline",
+  validator: "Validator",
 };

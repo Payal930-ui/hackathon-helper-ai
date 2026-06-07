@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth, db, googleProvider } from "@/lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import type { UserData } from "@/lib/types";
 
 interface AuthContextType {
@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   userData: UserData | null;
   refreshUserData: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   userData: null,
   refreshUserData: async () => {},
+  signInWithGoogle: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -39,6 +41,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, fetchUserData]);
 
+  const signInWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        const newUserData: UserData = {
+          uid: user.uid,
+          name: user.displayName || "Anonymous",
+          email: user.email || "",
+          theme: "light",
+          photoURL: user.photoURL || "",
+          createdAt: new Date().toISOString(),
+          badges: ["first_login"],
+        };
+        await setDoc(docRef, newUserData);
+        setUserData(newUserData);
+      } else {
+        setUserData(docSnap.data() as UserData);
+      }
+    } catch (error) {
+      console.error("Google sign in error:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -54,7 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [fetchUserData]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, userData, refreshUserData }}>
+    <AuthContext.Provider value={{ user, loading, userData, refreshUserData, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

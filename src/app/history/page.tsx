@@ -20,7 +20,7 @@ interface Project {
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<(Project & { id: string })[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 

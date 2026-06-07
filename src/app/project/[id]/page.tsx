@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ContentRenderer } from "@/components/ui/ContentRenderer";
-import { ProjectDetailSkeleton } from "@/components/ui/Skeleton";
+import { MentorChat } from "@/components/MentorChat";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
@@ -20,18 +20,22 @@ import {
   ChevronRight,
   Trash2,
   ClipboardList,
+  Star,
+  MessageSquare,
+  Users,
+  Clock,
+  ShieldCheck,
   Pencil,
   X,
   Save,
   RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TAB_LABELS, type OutputKey, type Project } from "@/lib/types";
-import { getContentForCopy } from "@/lib/utils";
-import { exportProjectPDF } from "@/lib/pdf";
-import { generatePPTX } from "@/lib/ppt";
+import { OutputKey, Project, TAB_LABELS } from "@/lib/types";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
-const TAB_ICONS: Record<OutputKey, React.ComponentType<{ className?: string }>> = {
+const TAB_ICONS: Record<string, React.ComponentType<any>> = {
   projectPlan: ClipboardList,
   techStack: Code,
   databaseSchema: Database,
@@ -40,6 +44,11 @@ const TAB_ICONS: Record<OutputKey, React.ComponentType<{ className?: string }>> 
   pptContent: Presentation,
   readme: FileText,
   deploymentGuide: Cloud,
+  projectScores: Star,
+  pitches: MessageSquare,
+  teamTasks: Users,
+  timeline: Clock,
+  validator: ShieldCheck,
 };
 
 export default function ProjectDetailsPage() {
@@ -53,7 +62,6 @@ export default function ProjectDetailsPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [saving, setSaving] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -74,7 +82,6 @@ export default function ProjectDetailsPage() {
           router.push("/dashboard");
         }
       } catch (error) {
-        console.error("Error fetching project:", error);
         toast.error("Failed to fetch project");
       } finally {
         setLoading(false);
@@ -83,49 +90,23 @@ export default function ProjectDetailsPage() {
     fetchProject();
   }, [id, router]);
 
-  const handleCopy = () => {
-    if (!project || !activeTab) return;
-    const text = getContentForCopy(project.generatedResults, activeTab);
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard!");
-  };
-
-  const downloadREADME = () => {
-    if (!project?.generatedResults?.readme) return;
-    const element = document.createElement("a");
-    const file = new Blob([project.generatedResults.readme], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = "README.md";
-    document.body.appendChild(element);
-    element.click();
-    toast.success("README downloaded!");
-  };
-
-  const exportPDF = async () => {
-    if (!project) return;
+  const handleSaveEdit = async () => {
+    if (!id || !project) return;
+    setSaving(true);
     try {
-      await exportProjectPDF(project);
-      toast.success("PDF exported!");
+      const docRef = doc(db, "projects", id);
+      await updateDoc(docRef, {
+        title: editTitle,
+        description: editDescription,
+        updatedAt: new Date().toISOString(),
+      });
+      setProject({ ...project, title: editTitle, description: editDescription });
+      setIsEditing(false);
+      toast.success("Project updated!");
     } catch (error) {
-      console.error("Error exporting PDF:", error);
-      toast.error("Failed to export PDF");
-    }
-  };
-
-  const exportPPT = async () => {
-    if (!project?.generatedResults?.pptContent) {
-      toast.error("PPT content not available");
-      return;
-    }
-    try {
-      const slides = Array.isArray(project.generatedResults.pptContent)
-        ? project.generatedResults.pptContent
-        : [];
-      await generatePPTX(project.title, slides);
-      toast.success("PPT exported!");
-    } catch (error) {
-      console.error("Error exporting PPT:", error);
-      toast.error("Failed to export PPT");
+      toast.error("Failed to save changes");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -136,79 +117,25 @@ export default function ProjectDetailsPage() {
         await deleteDoc(doc(db, "projects", id));
         toast.success("Project deleted");
         router.push("/history");
-      } catch {
+      } catch (error) {
         toast.error("Failed to delete project");
       }
-    }
-  };
-
-  const handleSaveEdit = async () => {
-    if (!id || !editTitle.trim() || !editDescription.trim()) {
-      toast.error("Title and description are required");
-      return;
-    }
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, "projects", id), {
-        title: editTitle.trim(),
-        description: editDescription.trim(),
-        updatedAt: new Date().toISOString(),
-      });
-      setProject((prev) =>
-        prev
-          ? { ...prev, title: editTitle.trim(), description: editDescription.trim() }
-          : null
-      );
-      setIsEditing(false);
-      toast.success("Project updated!");
-    } catch {
-      toast.error("Failed to update project");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!project || !id) return;
-    if (!confirm("This will regenerate all AI content. Continue?")) return;
-
-    setRegenerating(true);
-    try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: project.title,
-          description: project.description,
-          selectedOutputs: project.selectedOutputs,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-
-      await updateDoc(doc(db, "projects", id), {
-        generatedResults: data.generatedResults,
-        updatedAt: new Date().toISOString(),
-      });
-
-      setProject((prev) =>
-        prev ? { ...prev, generatedResults: data.generatedResults } : null
-      );
-      toast.success("Content regenerated!");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to regenerate"
-      );
-    } finally {
-      setRegenerating(false);
     }
   };
 
   if (loading) {
     return (
       <DashboardLayout>
-        <ProjectDetailSkeleton />
+        <div className="animate-pulse space-y-8 max-w-5xl mx-auto">
+          <div className="h-12 bg-gray-100 dark:bg-gray-800 rounded-2xl w-1/3"></div>
+          <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full w-2/3"></div>
+          <div className="flex gap-2 overflow-x-auto pb-4">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-10 w-24 bg-gray-100 dark:bg-gray-800 rounded-xl shrink-0"></div>
+            ))}
+          </div>
+          <div className="h-[500px] bg-gray-100 dark:bg-gray-800 rounded-3xl"></div>
+        </div>
       </DashboardLayout>
     );
   }
@@ -217,172 +144,126 @@ export default function ProjectDetailsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
-              <span onClick={() => router.push("/history")} className="hover:text-blue-600 cursor-pointer">
-                History
-              </span>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-gray-900 dark:text-white font-medium">{project.title}</span>
+      <div className="max-w-6xl mx-auto space-y-8 pb-20">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+              <span onClick={() => router.push("/history")} className="hover:text-blue-600 cursor-pointer transition-colors">History</span>
+              <ChevronRight size={14} />
+              <span className="text-blue-600">Project Details</span>
             </div>
-
+            
             {isEditing ? (
-              <div className="space-y-3 mt-2">
-                <input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full text-2xl font-bold px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <textarea
-                  value={editDescription}
+              <div className="space-y-4 max-w-2xl bg-white dark:bg-gray-900 p-6 rounded-3xl border border-blue-100 dark:border-blue-900/30 shadow-xl shadow-blue-500/5">
+                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="text-2xl font-bold dark:bg-gray-800 border-none px-0 focus-visible:ring-0" />
+                <textarea 
+                  value={editDescription} 
                   onChange={(e) => setEditDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full bg-transparent border-none focus:ring-0 text-gray-500 resize-none min-h-[100px]"
                 />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSaveEdit}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4" />
-                    {saving ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditTitle(project.title);
-                      setEditDescription(project.description);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl"><X size={16} className="mr-2" /> Cancel</Button>
+                  <Button size="sm" onClick={handleSaveEdit} disabled={saving} className="bg-blue-600 hover:bg-blue-700 rounded-xl">
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} className="mr-2" />}
+                    Save Changes
+                  </Button>
                 </div>
               </div>
             ) : (
-              <>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.title}</h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">{project.description}</p>
-              </>
+              <div className="group relative">
+                <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">{project.title}</h1>
+                <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-3xl leading-relaxed">{project.description}</p>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="absolute -top-1 -right-8 opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-blue-600 transition-all"
+                >
+                  <Pencil size={18} />
+                </button>
+              </div>
             )}
           </div>
 
-          <div className="flex items-center flex-wrap gap-2">
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
-              >
-                <Pencil className="w-4 h-4" />
-                Edit
-              </button>
-            )}
-            <button
-              onClick={handleRegenerate}
-              disabled={regenerating}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${regenerating ? "animate-spin" : ""}`} />
-              Regenerate
-            </button>
-            <button
-              onClick={exportPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
-            >
-              <Download className="w-4 h-4" />
-              PDF
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+          <div className="flex gap-3">
+            <Button variant="outline" className="rounded-2xl border-gray-100 dark:border-gray-800 shadow-sm">
+              <Download size={18} className="mr-2" />
+              Export
+            </Button>
+            <Button onClick={handleDelete} variant="ghost" className="rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10">
+              <Trash2 size={18} />
+            </Button>
           </div>
         </div>
 
-        <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
           {project.selectedOutputs?.map((key) => {
-            const Icon = TAB_ICONS[key];
+            const Icon = TAB_ICONS[key] || ClipboardList;
             const isActive = activeTab === key;
             return (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl whitespace-nowrap transition-all font-bold text-sm ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-gray-700 hover:border-blue-500"
+                    ? "bg-blue-600 text-white shadow-xl shadow-blue-500/30 scale-105"
+                    : "bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-800 hover:border-blue-500/50"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="font-medium text-sm">{TAB_LABELS[key]}</span>
+                <Icon size={16} />
+                {TAB_LABELS[key]}
               </button>
             );
           })}
         </div>
 
-        <div className="glass-card rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-            <h3 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
-              {activeTab && (() => {
-                const Icon = TAB_ICONS[activeTab];
-                return <Icon className="w-5 h-5 text-blue-600" />;
-              })()}
-              <span>{activeTab && TAB_LABELS[activeTab]}</span>
-            </h3>
-            <div className="flex items-center space-x-2">
-              {activeTab === "readme" && (
-                <button
-                  onClick={downloadREADME}
-                  className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
-                  title="Download README"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-              )}
-              {activeTab === "pptContent" && (
-                <button
-                  onClick={exportPPT}
-                  className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
-                  title="Download PPT"
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-              )}
-              <button
-                onClick={handleCopy}
-                className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
-                title="Copy to clipboard"
-              >
-                <Copy className="w-5 h-5" />
-              </button>
+        {/* Content Section */}
+        <motion.div 
+          key={activeTab}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-900 rounded-[40px] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden"
+        >
+          <div className="px-10 py-8 border-b border-gray-50 dark:border-gray-800 flex justify-between items-center bg-gray-50/30 dark:bg-gray-950/30">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
+                {activeTab && TAB_ICONS[activeTab] && (() => {
+                  const Icon = TAB_ICONS[activeTab];
+                  return <Icon size={24} />;
+                })()}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold dark:text-white">{activeTab ? TAB_LABELS[activeTab] : ""} Analysis</h3>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Generated by Hackathon Helper AI</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={() => {
+                const text = JSON.stringify(project.generatedResults[activeTab as OutputKey], null, 2);
+                navigator.clipboard.writeText(text);
+                toast.success("Copied to clipboard!");
+              }} className="rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600">
+                <Copy size={20} />
+              </Button>
             </div>
           </div>
-          <div className="flex-1 p-6 overflow-auto">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {activeTab && project.generatedResults && (
-                  <ContentRenderer
-                    outputKey={activeTab}
-                    content={project.generatedResults[activeTab]}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
+          
+          <div className="p-10">
+            <ContentRenderer type={activeTab as OutputKey} data={project.generatedResults[activeTab as OutputKey]} />
           </div>
-        </div>
+        </motion.div>
+
+        {/* AI Mentor Chat */}
+        <MentorChat 
+          projectId={id} 
+          projectTitle={project.title} 
+          projectDescription={project.description} 
+        />
       </div>
     </DashboardLayout>
   );
+}
+
+function Loader2({ size, className }: { size?: number, className?: string }) {
+  return <RefreshCw size={size} className={`animate-spin ${className}`} />;
 }

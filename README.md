@@ -98,11 +98,13 @@ cp .env.local.example .env.local
 ### 3. Firebase Setup
 
 1. Create a project at [Firebase Console](https://console.firebase.google.com)
-2. Enable **Authentication** → Email/Password
-3. Create a **Firestore Database**
-4. Deploy security rules from `firestore.rules`
-5. Create composite index from `firestore.indexes.json` (or follow the link in the browser console error)
-6. Copy config values to `.env.local`
+2. Enable **Email/Password Auth** and **Cloud Firestore**
+3. Create a **Composite Index** for queries to work:
+   - Collection: `projects`
+   - Fields: `userId` (Ascending), `createdAt` (Descending)
+   - Scope: Collection
+   - *Alternatively, run the `History` page and click the link in the console error to automatically create it.*
+4. Copy config values to `.env.local`
 
 ### 4. Gemini API Key
 
