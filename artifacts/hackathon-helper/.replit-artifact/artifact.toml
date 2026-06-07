@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hackathon Helper AI"
+version = "1.0.0"
+id = "artifacts/hackathon-helper"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22551
+
+[services.development]
+run = "pnpm --filter @workspace/hackathon-helper run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hackathon-helper", "run", "build" ]
+publicDir = "artifacts/hackathon-helper/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22551"
+BASE_PATH = "/"
