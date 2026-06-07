@@ -17,7 +17,7 @@ const OUTPUT_PROMPTS: Record<OutputKey, string> = {
   validator: `"validator": An object with "strengths" (array), "weaknesses" (array), "risks" (array), "suggestions" (array).`,
 };
 
-const GEMINI_MODEL = "gemini-1.5-flash-latest";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 export async function generateProjectData(
   title: string,
