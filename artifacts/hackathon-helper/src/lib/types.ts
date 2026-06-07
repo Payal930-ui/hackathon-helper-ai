@@ -15,6 +15,29 @@ export type OutputKey =
   | "timeline"
   | "validator";
 
+export const CORE_OUTPUTS: OutputKey[] = [
+  "projectScores",
+  "projectPlan",
+  "techStack",
+  "timeline",
+];
+
+export const ALL_OUTPUTS: OutputKey[] = [
+  "projectScores",
+  "projectPlan",
+  "techStack",
+  "timeline",
+  "databaseSchema",
+  "uiDesign",
+  "codeSnippets",
+  "readme",
+  "deploymentGuide",
+  "pptContent",
+  "pitches",
+  "teamTasks",
+  "validator",
+];
+
 export interface UserData {
   uid: string;
   name: string;
@@ -47,6 +70,8 @@ export interface ProjectScores {
   scalability: number;
   uiux: number;
   winningProbability: number;
+  marketPotential?: number;
+  complexity?: number;
 }
 
 export interface Pitches {
@@ -70,6 +95,8 @@ export interface ValidatorResult {
   weaknesses: string[];
   risks: string[];
   suggestions: string[];
+  score?: number;
+  verdict?: string;
 }
 
 export interface GeneratedResults {
@@ -128,11 +155,11 @@ export const ACHIEVEMENTS: Achievement[] = [
 
 export const TAB_LABELS: Record<OutputKey, string> = {
   projectPlan: "Plan",
-  techStack: "Tech",
-  databaseSchema: "Schema",
+  techStack: "Tech Stack",
+  databaseSchema: "Database",
   uiDesign: "UI/UX",
   codeSnippets: "Code",
-  pptContent: "PPT",
+  pptContent: "Slides",
   readme: "README",
   deploymentGuide: "Deploy",
   projectScores: "Score",
@@ -140,4 +167,20 @@ export const TAB_LABELS: Record<OutputKey, string> = {
   teamTasks: "Tasks",
   timeline: "Timeline",
   validator: "Validator",
+};
+
+export const TAB_DESCRIPTIONS: Record<OutputKey, string> = {
+  projectPlan: "Step-by-step roadmap with phases and milestones",
+  techStack: "Recommended technologies with justifications",
+  databaseSchema: "Database structure and relationships",
+  uiDesign: "Color palette, typography, and UI wireframes",
+  codeSnippets: "Ready-to-use code for core features",
+  pptContent: "10-slide presentation for judges",
+  readme: "Professional README for GitHub",
+  deploymentGuide: "Step-by-step deployment instructions",
+  projectScores: "AI scoring on key dimensions",
+  pitches: "30s, 1min, and 3min elevator pitches",
+  teamTasks: "Task distribution based on team size",
+  timeline: "Hour-by-hour timeline based on duration",
+  validator: "SWOT-style project validation",
 };

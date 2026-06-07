@@ -1,0 +1,320 @@
+You are a senior full-stack engineer.
+
+Transform my Hackathon Helper AI project into a premium production-ready AI SaaS platform.
+
+==================================================
+PHASE 1: REPLACE GROK WITH OPENROUTER
+==================================================
+
+The application currently uses xAI Grok.
+
+Completely remove Grok integration.
+
+Remove:
+- XAI_API_KEY
+- xAI SDK
+- Grok-specific code
+- Unused dependencies
+
+Replace with OpenRouter.
+
+Environment Variable:
+
+OPENROUTER_API_KEY=
+
+Use OpenAI-compatible API.
+
+Default model:
+
+deepseek/deepseek-chat-v3
+
+Create a reusable AI service layer.
+
+Requirements:
+
+- Project Generator must work
+- AI Mentor Chat must work
+- Future AI features must use the same service
+- Add proper retry handling
+- Add timeout handling
+- Add graceful error messages
+- Add logging
+- Keep all existing API routes working
+
+==================================================
+PHASE 2: SUPER FAST AI GENERATION
+==================================================
+
+Current generation is slow.
+
+Refactor generation flow.
+
+Generate ONLY:
+
+- Project Plan
+- Tech Stack
+- Timeline
+
+during initial generation.
+
+Create separate buttons for:
+
+- Generate Database Schema
+- Generate UI/UX
+- Generate Code
+- Generate README
+- Generate PPT
+- Generate Deployment Guide
+- Generate Team Tasks
+- Generate Elevator Pitch
+- Generate SWOT Analysis
+
+Each section must generate independently.
+
+Cache all generated content in Firestore.
+
+==================================================
+PHASE 3: PREMIUM INTERACTIVE RESULTS
+==================================================
+
+Transform AI outputs into a visual dashboard.
+
+NO plain text blocks.
+
+Use:
+
+- Cards
+- Charts
+- Tables
+- Metrics
+- Badges
+- Progress bars
+- Visual indicators
+
+Create tabs:
+
+Overview
+Tech Stack
+Database
+UI/UX
+Code
+README
+PPT
+Deployment
+Timeline
+Tasks
+Validator
+Pitches
+
+==================================================
+PHASE 4: CHARTS & ANALYTICS
+==================================================
+
+Install and use Recharts.
+
+Create:
+
+1. Project Score Dashboard
+
+Metrics:
+
+- Innovation
+- Feasibility
+- Scalability
+- Complexity
+- Market Potential
+- Winning Probability
+
+2. Radar Chart
+
+3. Progress Chart
+
+4. Timeline Chart
+
+5. Team Workload Chart
+
+6. Project Health Dashboard
+
+7. Risk Analysis Chart
+
+==================================================
+PHASE 5: VISUAL ARCHITECTURE
+==================================================
+
+Generate architecture diagrams automatically.
+
+Use Mermaid.
+
+Generate:
+
+- System Architecture
+- Database Architecture
+- API Flow
+- User Flow
+- Authentication Flow
+
+Render diagrams visually.
+
+==================================================
+PHASE 6: BEAUTIFUL TABLES
+==================================================
+
+Automatically convert AI output into tables.
+
+Create tables for:
+
+- Tech Stack
+- Database Schema
+- APIs
+- Team Roles
+- Timeline
+- Tasks
+- Roadmap
+- Sprint Planning
+- Deployment Steps
+
+==================================================
+PHASE 7: HACKATHON FEATURES
+==================================================
+
+Add:
+
+1. AI Judge Score
+
+2. Winning Probability
+
+3. SWOT Analysis
+
+4. Project Strength Meter
+
+5. Weakness Detector
+
+6. Innovation Score
+
+7. Feasibility Score
+
+8. Market Potential Score
+
+9. Elevator Pitch Generator
+
+Generate:
+
+- 30 Second Pitch
+- 1 Minute Pitch
+- 3 Minute Pitch
+
+10. Team Distribution
+
+11. Sprint Planner
+
+12. Hackathon Roadmap
+
+==================================================
+PHASE 8: LOADING EXPERIENCE
+==================================================
+
+Remove boring spinners.
+
+Use:
+
+- Skeleton Loaders
+- Shimmer Effects
+- Progress Indicators
+- Animated Loading Cards
+
+Implement:
+
+- Streaming AI responses
+- Incremental rendering
+- Lazy loading
+
+Results should appear progressively.
+
+==================================================
+PHASE 9: EXPORT FEATURES
+==================================================
+
+Add:
+
+- Export PDF
+- Download README.md
+- Download JSON
+- Download Project Summary
+- Copy buttons everywhere
+- One-click export
+
+==================================================
+PHASE 10: FIREBASE IMPROVEMENTS
+==================================================
+
+Fix and improve:
+
+- Google Login
+- Forgot Password
+- History Storage
+- Firestore Indexing
+- Better Error Handling
+
+Show friendly user messages.
+
+==================================================
+PHASE 11: PREMIUM UI/UX
+==================================================
+
+Create a world-class SaaS interface.
+
+Use:
+
+- Glassmorphism
+- Framer Motion
+- Smooth animations
+- Responsive design
+- Dark mode
+- Modern gradients
+- Beautiful cards
+- Hover effects
+- Professional typography
+
+Make it look similar to:
+
+- Notion AI
+- Linear
+- Vercel
+- Framer
+
+==================================================
+PHASE 12: PERFORMANCE
+==================================================
+
+Optimize everything.
+
+Implement:
+
+- Memoization
+- Lazy loading
+- Dynamic imports
+- Firestore caching
+- Optimized API calls
+
+Target:
+
+- Fast initial load
+- Fast AI generation
+- Smooth UX
+
+==================================================
+PHASE 13: FINAL VERIFICATION
+==================================================
+
+After all changes:
+
+1. Run build.
+2. Fix TypeScript errors.
+3. Fix lint errors.
+4. Ensure deployment works on Vercel.
+5. Ensure deployment works on Replit.
+6. Verify OpenRouter integration works.
+7. Verify AI generation works.
+8. Verify history works.
+9. Verify exports work.
+10. Provide a detailed summary of all changes.

@@ -32,6 +32,23 @@ export async function generateProjectData(
   return data.results;
 }
 
+export async function generateSingleOutput(
+  title: string,
+  description: string,
+  output: OutputKey,
+  teamSize: number = 1,
+  duration: string = "24h"
+): Promise<unknown> {
+  const data = await post<{ results: GeneratedResults }>("/generate", {
+    title,
+    description,
+    outputs: [output],
+    teamSize,
+    duration,
+  });
+  return data.results[output];
+}
+
 export async function askMentor(
   title: string,
   description: string,
