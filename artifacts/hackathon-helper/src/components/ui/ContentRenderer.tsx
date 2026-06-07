@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import {
   ResponsiveContainer,
   RadarChart,
@@ -25,10 +25,15 @@ import {
   Presentation,
   Trophy,
   Zap,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "./Button";
 import toast from "react-hot-toast";
-import type { OutputKey, PPTSlide, TeamTask, TimelineMilestone, ValidatorResult, ProjectScores } from "@/lib/types";
+import type { OutputKey, PPTSlide, TeamTask, TimelineMilestone, ValidatorResult, ProjectScores, ArchitectureDiagramEntry } from "@/lib/types";
+
+const MermaidDiagramLazy = lazy(() =>
+  import("./MermaidDiagram").then((m) => ({ default: m.MermaidDiagram }))
+);
 
 interface ContentRendererProps {
   type: OutputKey;
@@ -583,6 +588,73 @@ export const ContentRenderer = ({ type, data }: ContentRendererProps) => {
               </div>
             ))}
           </div>
+        </div>
+      );
+    }
+
+    // ── Architecture Diagrams ─────────────────────────────────────────────────
+    case "architectureDiagram": {
+      const diagrams = Array.isArray(data) ? (data as ArchitectureDiagramEntry[]) : [];
+      if (!diagrams.length) {
+        return (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
+            <GitBranch size={40} strokeWidth={1.5} />
+            <p className="text-sm">No diagrams generated</p>
+          </div>
+        );
+      }
+
+      const DIAGRAM_ICONS: Record<string, string> = {
+        "System Architecture": "🏗️",
+        "User Flow": "🔀",
+        "API Flow": "⚡",
+        "Data Model": "🗄️",
+      };
+
+      const DIAGRAM_COLORS: Record<string, string> = {
+        "System Architecture": "from-blue-600 to-indigo-600",
+        "User Flow": "from-purple-600 to-pink-600",
+        "API Flow": "from-orange-500 to-amber-500",
+        "Data Model": "from-emerald-600 to-teal-600",
+      };
+
+      return (
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            {diagrams.map((d, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2 rounded-xl px-4 py-3 bg-gradient-to-r ${DIAGRAM_COLORS[d.title] ?? "from-gray-600 to-gray-700"} text-white text-sm font-semibold shadow`}
+              >
+                <span className="text-xl">{DIAGRAM_ICONS[d.title] ?? "📊"}</span>
+                {d.title}
+              </div>
+            ))}
+          </div>
+
+          {diagrams.map((entry, i) => (
+            <div key={i} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${DIAGRAM_COLORS[entry.title] ?? "from-gray-600 to-gray-700"} flex items-center justify-center text-base shadow`}>
+                  {DIAGRAM_ICONS[entry.title] ?? "📊"}
+                </div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">{entry.title}</h3>
+                <button
+                  onClick={() => handleCopy(entry.diagram)}
+                  className="ml-auto flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-700 dark:hover:text-white transition-colors"
+                >
+                  <Copy size={12} /> Copy Mermaid
+                </button>
+              </div>
+              <Suspense
+                fallback={
+                  <div className="animate-pulse bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-xl h-56" />
+                }
+              >
+                <MermaidDiagramLazy chart={entry.diagram} />
+              </Suspense>
+            </div>
+          ))}
         </div>
       );
     }

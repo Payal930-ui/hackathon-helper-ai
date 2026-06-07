@@ -92,6 +92,12 @@ const OUTPUT_PROMPTS: Record<string, string> = {
   teamTasks: `"teamTasks": An array of objects with "role" and "tasks" (string array) distributed by team size. Include estimated hours per task.`,
   timeline: `"timeline": An array of objects with "time" (e.g. "Hour 1-2") and "task" (specific deliverable) based on duration. Be granular.`,
   validator: `"validator": An object with "strengths" (array), "weaknesses" (array), "risks" (array), "suggestions" (array), "score" (0-100 integer), and "verdict" (string summary).`,
+  architectureDiagram: `"architectureDiagram": An array of exactly 4 diagram objects, each with "title" (string) and "diagram" (string — valid Mermaid.js syntax). Include these 4 diagrams in order:
+    1. title: "System Architecture" — use \`graph TD\` showing all major components (frontend, backend, API, DB, external services) with labeled arrows.
+    2. title: "User Flow" — use \`flowchart TD\` showing the full user journey from landing page through auth, core feature, to completion.
+    3. title: "API Flow" — use \`sequenceDiagram\` showing how Client, API Server, Database, and AI Service interact for the main use case.
+    4. title: "Data Model" — use \`erDiagram\` showing the main entities, their fields (with types), and relationships.
+    CRITICAL: Each "diagram" value must be syntactically valid Mermaid. Use simple node IDs (no spaces, no special chars). Escape quotes inside strings. Do NOT use \`\`\` fences inside the diagram strings.`,
 };
 
 export async function generateProjectData(

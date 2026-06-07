@@ -13,7 +13,8 @@ export type OutputKey =
   | "pitches"
   | "teamTasks"
   | "timeline"
-  | "validator";
+  | "validator"
+  | "architectureDiagram";
 
 export const CORE_OUTPUTS: OutputKey[] = [
   "projectScores",
@@ -27,6 +28,7 @@ export const ALL_OUTPUTS: OutputKey[] = [
   "projectPlan",
   "techStack",
   "timeline",
+  "architectureDiagram",
   "databaseSchema",
   "uiDesign",
   "codeSnippets",
@@ -99,6 +101,11 @@ export interface ValidatorResult {
   verdict?: string;
 }
 
+export interface ArchitectureDiagramEntry {
+  title: string;
+  diagram: string;
+}
+
 export interface GeneratedResults {
   projectPlan?: string;
   // @ts-ignore
@@ -115,6 +122,7 @@ export interface GeneratedResults {
   teamTasks?: TeamTask[];
   timeline?: TimelineMilestone[];
   validator?: ValidatorResult;
+  architectureDiagram?: ArchitectureDiagramEntry[];
 }
 
 export interface Project {
@@ -167,6 +175,7 @@ export const TAB_LABELS: Record<OutputKey, string> = {
   teamTasks: "Tasks",
   timeline: "Timeline",
   validator: "Validator",
+  architectureDiagram: "Diagrams",
 };
 
 export const TAB_DESCRIPTIONS: Record<OutputKey, string> = {
@@ -183,4 +192,5 @@ export const TAB_DESCRIPTIONS: Record<OutputKey, string> = {
   teamTasks: "Task distribution based on team size",
   timeline: "Hour-by-hour timeline based on duration",
   validator: "SWOT-style project validation",
+  architectureDiagram: "System, user flow, API sequence, and data model diagrams",
 };

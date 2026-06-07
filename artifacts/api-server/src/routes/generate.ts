@@ -7,13 +7,13 @@ const router: IRouter = Router();
 const VALID_OUTPUTS = [
   "projectPlan", "techStack", "databaseSchema", "uiDesign", "codeSnippets",
   "readme", "deploymentGuide", "pptContent", "projectScores", "pitches",
-  "teamTasks", "timeline", "validator",
+  "teamTasks", "timeline", "validator", "architectureDiagram",
 ] as const;
 
 const GenerateInput = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(2000),
-  outputs: z.array(z.enum(VALID_OUTPUTS)).min(1).max(13),
+  outputs: z.array(z.enum(VALID_OUTPUTS)).min(1).max(14),
   teamSize: z.number().int().min(1).max(10).optional().default(1),
   duration: z.enum(["8h", "24h", "3d", "1w"]).optional().default("24h"),
 });
