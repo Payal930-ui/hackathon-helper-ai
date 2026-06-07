@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { askMentor } from "@/lib/gemini";
+import { askMentor } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "firebase/firestore";

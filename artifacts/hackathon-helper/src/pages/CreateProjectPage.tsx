@@ -3,7 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { useLocation } from "wouter";
-import { generateProjectData } from "@/lib/gemini";
+import { generateProjectData } from "@/lib/api";
 import type { OutputKey } from "@/lib/types";
 import { TAB_LABELS } from "@/lib/types";
 import { DashboardLayout } from "@/components/DashboardLayout";
