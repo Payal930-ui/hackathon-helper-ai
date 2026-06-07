@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { generateProjectData, askMentor } from "../lib/gemini";
+import { generateProjectData, askMentor } from "../lib/ai";
 
 const router: IRouter = Router();
 

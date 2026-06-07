@@ -1,4 +1,58 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
+
+const MODEL = "grok-3-fast";
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
+
+function getClient(): OpenAI {
+  const apiKey = process.env["XAI_API_KEY"];
+  if (!apiKey) throw new Error("XAI_API_KEY environment variable is not set");
+  return new OpenAI({
+    apiKey,
+    baseURL: "https://api.x.ai/v1",
+    maxRetries: 0,
+    timeout: 60_000,
+  });
+}
+
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  let delay = INITIAL_RETRY_DELAY_MS;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+
+      if (err instanceof OpenAI.APIError) {
+        const isRateLimit = err.status === 429;
+        const isServerError = err.status >= 500;
+
+        if ((isRateLimit || isServerError) && attempt < MAX_RETRIES) {
+          const retryAfterHeader = err.headers?.["retry-after"];
+          const waitMs =
+            retryAfterHeader != null
+              ? Number(retryAfterHeader) * 1000
+              : delay;
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          delay *= 2;
+          continue;
+        }
+
+        if (isRateLimit) {
+          throw new Error(
+            "The AI service is currently rate-limited. Please wait a moment and try again."
+          );
+        }
+      }
+
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
 
 const OUTPUT_PROMPTS: Record<string, string> = {
   projectPlan: `"projectPlan": A detailed step-by-step hackathon roadmap with phases (Day 1-3), milestones, team roles, and risk mitigation. Use markdown headings and bullet points.`,
@@ -16,14 +70,6 @@ const OUTPUT_PROMPTS: Record<string, string> = {
   validator: `"validator": An object with "strengths" (array), "weaknesses" (array), "risks" (array), "suggestions" (array).`,
 };
 
-const GEMINI_MODEL = "gemini-2.0-flash";
-
-function getGenAI(): GoogleGenerativeAI {
-  const apiKey = process.env["GEMINI_API_KEY"];
-  if (!apiKey) throw new Error("GEMINI_API_KEY environment variable is not set");
-  return new GoogleGenerativeAI(apiKey);
-}
-
 export async function generateProjectData(
   title: string,
   description: string,
@@ -31,11 +77,7 @@ export async function generateProjectData(
   teamSize: number = 1,
   duration: string = "24h"
 ): Promise<Record<string, unknown>> {
-  const genAI = getGenAI();
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-  });
+  const client = getClient();
 
   const fieldInstructions = outputs
     .filter((k) => OUTPUT_PROMPTS[k])
@@ -61,13 +103,26 @@ Rules:
 - Do NOT wrap the response in markdown code blocks
 - Return raw JSON only`;
 
-  const generatedResult = await model.generateContent(prompt);
-  let text = generatedResult.response.text().trim();
-  if (text.startsWith("```")) {
-    text = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+  const completion = await withRetry(() =>
+    client.chat.completions.create({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 8192,
+      response_format: { type: "json_object" },
+    })
+  );
+
+  const text = completion.choices[0]?.message?.content?.trim() ?? "";
+
+  let parsed: Record<string, unknown>;
+  try {
+    const cleaned = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+    parsed = JSON.parse(cleaned) as Record<string, unknown>;
+  } catch {
+    throw new Error("AI returned invalid JSON. Please try again.");
   }
 
-  const parsed = JSON.parse(text) as Record<string, unknown>;
   const result: Record<string, unknown> = {};
   for (const key of outputs) {
     result[key] = parsed[key] ?? `Content for ${key} could not be generated.`;
@@ -81,23 +136,33 @@ export async function askMentor(
   question: string,
   history: { role: "user" | "model"; parts: { text: string }[] }[] = []
 ): Promise<string> {
-  const genAI = getGenAI();
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  const client = getClient();
 
-  const chat = model.startChat({
-    history: [
-      {
-        role: "user",
-        parts: [{ text: `You are a hackathon mentor for a project called "${title}". Description: "${description}". Help the user with their technical or strategic questions.` }],
-      },
-      {
-        role: "model",
-        parts: [{ text: "I am your hackathon mentor. How can I help you build this project today?" }],
-      },
-      ...history,
-    ],
-  });
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    {
+      role: "system",
+      content: `You are an expert hackathon mentor for a project called "${title}". Project description: "${description}". Help the user with technical and strategic questions. Be concise, practical, and encouraging.`,
+    },
+    ...history.map(
+      (msg): OpenAI.Chat.ChatCompletionMessageParam => ({
+        role: msg.role === "model" ? "assistant" : "user",
+        content: msg.parts.map((p) => p.text).join("\n"),
+      })
+    ),
+    { role: "user", content: question },
+  ];
 
-  const result = await chat.sendMessage(question);
-  return result.response.text();
+  const completion = await withRetry(() =>
+    client.chat.completions.create({
+      model: MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 1024,
+    })
+  );
+
+  return (
+    completion.choices[0]?.message?.content?.trim() ??
+    "I could not generate a response. Please try again."
+  );
 }
