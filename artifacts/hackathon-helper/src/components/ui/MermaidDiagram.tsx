@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import { useTheme } from "@/context/ThemeContext";
 
 type MermaidModule = typeof import("mermaid");
@@ -71,7 +72,12 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         try {
           const uniqueId = `${idRef.current}-${Date.now()}`;
           const { svg: rendered } = await m.render(uniqueId, chart.trim());
-          if (!cancelled) setSvg(rendered);
+          const safe = DOMPurify.sanitize(rendered, {
+            USE_PROFILES: { svg: true, svgFilters: true },
+            ADD_TAGS: ["foreignObject"],
+            ADD_ATTR: ["dominant-baseline", "text-anchor", "transform-origin"],
+          });
+          if (!cancelled) setSvg(safe);
         } catch (e) {
           if (!cancelled) {
             setError(`Render error: ${String(e).slice(0, 120)}`);
