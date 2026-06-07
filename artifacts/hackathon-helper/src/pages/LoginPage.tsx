@@ -49,7 +49,14 @@ export default function LoginPage() {
       toast.success("Signed in with Google!");
       navigate("/dashboard");
     } catch (error: unknown) {
-      toast.error((error as Error).message || "Google sign in failed");
+      const code = (error as { code?: string }).code;
+      if (code === "auth/unauthorized-domain") {
+        toast.error("Google sign-in requires your domain to be added in Firebase Console → Authentication → Authorized domains.", { duration: 6000 });
+      } else if (code === "auth/popup-blocked") {
+        toast.error("Popup was blocked. Please allow popups for this site and try again.");
+      } else {
+        toast.error("Google sign-in failed. Use email/password instead.");
+      }
     }
   };
 
